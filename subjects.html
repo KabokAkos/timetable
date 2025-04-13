@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subjects</title>
+    <script src="subjects_service.js"></script>
+</head>
+
+<body>
+    <a href="index.html">
+        <h1>Timetable</h1>
+    </a>
+
+    <h2>Add New Subject</h2>
+    <form id="addSubjectForm">
+        <label for="subjectName">Subject Name:</label>
+        <input type="text" id="subjectName" name="subjectName" required>
+        <button type="submit">Add Subject</button>
+    </form>
+
+    <table id="subject">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        getAllSubject();
+        document.getElementById("addSubjectForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const subjectName = document.getElementById("subjectName").value;
+            addSubject(subjectName);
+            document.getElementById("subjectName").value = "";
+        });
+    </script>
+</body>
+</html>

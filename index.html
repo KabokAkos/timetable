@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Add a new subject</h2>
+    <form id="add-timetable-form">
+        <label for="day">Day:</label>
+        <select id="day" name="day">
+            <option value="1">Hétfő</option>
+            <option value="2">Kedd</option>
+            <option value="3">Szerda</option>
+            <option value="4">Csütörtök</option>
+            <option value="5">Péntek</option>
+        </select>
+        <br><br>
+
+        <label for="time">Lesson:</label>
+        <select id="time" name="time">
+            <option value="1">1. óra</option>
+            <option value="2">2. óra</option>
+            <option value="3">3. óra</option>
+            <option value="4">4. óra</option>
+            <option value="5">5. óra</option>
+            <option value="6">6. óra</option>
+            <option value="7">7. óra</option>
+            <option value="8">8. óra</option>
+            <option value="9">9. óra</option>
+            <option value="10">10. óra</option>
+            <option value="11">11. óra</option>
+            <option value="12">12. óra</option>
+        </select>
+        <br><br>
+
+        <label for="subject">Subject:</label>
+        <select id="subject" name="subject">
+        </select>
+        <br><br>
+
+        <button type="submit" id="add-btn">Add subject</button>
+        <button type="button" id="edit-btn">Editing the subject</button>
+        <button type="button" id="delete-btn">Delete a subject</button>
+    </form>
+    <a href="index.html">
+        <h2>Subjects</h2>
+    </a>
+    <h1>Timetable</h1>
+
+    <table id="timetable">
+        <thead>
+            <tr>
+                <th>Lesson</th>
+                <th>Length</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script src="timetable_service.js"></script>
+    <script>
+        let timetableData = [];
+        function loadTimetable() {
+            fetch('http://localhost:3000/timetable')
+                .then(response => response.json())
+                .then(data => {
+                    timetableData = data;
+                    renderTimetable();
+                })
+                .catch(error => console.error('Error when loading the timetable:', error));
+        }
+
+        function renderTimetable() {
+            const tbody = document.querySelector("#timetable tbody");
+            tbody.innerHTML = '';
+
+            for (let time = 1; time <= 12; time++) {
+                const row = document.createElement("tr");
+
+                const timeCell = document.createElement("td");
+                timeCell.textContent = `${time}. óra`;
+                row.appendChild(timeCell);
+
+                const slot = timetableData.find(item => parseInt(item.time_id) === time);
+                const lengthCell = document.createElement("td");
+
+                if (slot && slot.start && slot.end) {
+                    lengthCell.textContent = `${slot.start} - ${slot.end}`;
+                } else {
+                    lengthCell.textContent = "-";
+                }
+
+                row.appendChild(lengthCell);
+
+                for (let day = 1; day <= 5; day++) {
+                    const dayCell = document.createElement("td");
+                    const lesson = timetableData.find(lesson =>
+                        parseInt(lesson.time_id) === time && parseInt(lesson.day_id) === day
+                    );
+
+                    if (lesson) {
+                        dayCell.textContent = lesson.subject_name;
+                    } else {
+                        dayCell.textContent = "-";
+                    }
+
+                    row.appendChild(dayCell);
+                }
+
+                tbody.appendChild(row);
+            }
+        }
+
+        function loadSubjects() {
+            fetch('http://localhost:3000/subjects')
+                .then(response => response.json())
+                .then(subjects => {
+                    const subjectSelect = document.querySelector("#subject");
+                    subjects.forEach(subject => {
+                        const option = document.createElement("option");
+                        option.value = subject.id;
+                        option.textContent = subject.name;
+                        subjectSelect.appendChild(option);
+                    });
+                });
+        }
+
+        document.querySelector("#add-timetable-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const day_id = document.querySelector("#day").value;
+            const time_id = document.querySelector("#time").value;
+            const subject_id = document.querySelector("#subject").value;
+
+            fetch("http://localhost:3000/timetable", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ day_id, time_id, subject_id })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    loadTimetable();
+                })
+                .catch(error => console.error('Hiba:', error));
+        });
+
+        document.getElementById('edit-btn').addEventListener('click', function () {
+            const day_id = document.querySelector("#day").value;
+            const time_id = document.querySelector("#time").value;
+            const subject_id = document.querySelector("#subject").value;
+
+            const lesson = timetableData.find(item =>
+                item.day_id == day_id && item.time_id == time_id
+            );
+
+            if (lesson) {
+                fetch(`http://localhost:3000/timetable/${lesson.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ day_id, time_id, subject_id })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        loadTimetable();
+                    })
+                    .catch(error => console.error('Error:', error));
+            } else {
+                alert("There is no such subject that can be edited.");
+            }
+        });
+
+        document.getElementById('delete-btn').addEventListener('click', function () {
+            const day_id = document.querySelector("#day").value;
+            const time_id = document.querySelector("#time").value;
+
+            const lesson = timetableData.find(item =>
+                item.day_id == day_id && item.time_id == time_id
+            );
+
+            if (lesson) {
+                fetch(`http://localhost:3000/timetable/${lesson.id}`, {
+                    method: 'DELETE',
+                })
+                    .then(() => {
+                        loadTimetable();
+                    })
+                    .catch(error => console.error('Error:', error));
+            } else {
+                alert("There is no such lesson that can be deleted.");
+            }
+        });
+        loadSubjects();
+        loadTimetable();
+    </script>
+
+</body>
+
+</html>
